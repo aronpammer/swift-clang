@@ -177,6 +177,7 @@ public:
                                            /// metrics and statistics.
   unsigned ShowTimers : 1;                 ///< Show timers for individual
                                            /// actions.
+  unsigned TimeTrace : 1;                  /// Output time trace profile.
   unsigned ShowVersion : 1;                ///< Show the -version text.
   unsigned FixWhatYouCan : 1;              ///< Apply fixes even if there are
                                            /// unfixable errors.
@@ -334,7 +335,7 @@ public:
 public:
   FrontendOptions() :
     DisableFree(false), RelocatablePCH(false), ShowHelp(false),
-    ShowStats(false), ShowTimers(false), ShowVersion(false),
+    ShowStats(false), ShowTimers(false), TimeTrace(false), ShowVersion(false),
     FixWhatYouCan(false), FixOnlyWarnings(false), FixAndRecompile(false),
     FixToTemporaries(false), ARCMTMigrateEmitARCErrors(false),
     SkipFunctionBodies(false), UseGlobalModuleIndex(true),
