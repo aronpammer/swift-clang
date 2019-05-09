@@ -32,8 +32,10 @@
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/TimeProfiler.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cstdio>
@@ -197,6 +199,9 @@ int cc1_main(ArrayRef<const char *> Argv, const char *Argv0, void *MainAddr) {
   bool Success = CompilerInvocation::CreateFromArgs(
       Clang->getInvocation(), Argv.begin(), Argv.end(), Diags);
 
+  if (Clang->getFrontendOpts().TimeTrace)
+    llvm::timeTraceProfilerInitialize();
+
   // Infer the builtin include path if unspecified.
   if (Clang->getHeaderSearchOpts().UseBuiltinIncludes &&
       Clang->getHeaderSearchOpts().ResourceDir.empty())
@@ -218,11 +223,28 @@ int cc1_main(ArrayRef<const char *> Argv, const char *Argv0, void *MainAddr) {
     return 1;
 
   // Execute the frontend actions.
-  Success = ExecuteCompilerInvocation(Clang.get());
+  {
+    llvm::TimeTraceScope TimeScope("ExecuteCompiler", StringRef(""));
+    Success = ExecuteCompilerInvocation(Clang.get());
+  }
 
   // If any timers were active but haven't been destroyed yet, print their
   // results now.  This happens in -disable-free mode.
   llvm::TimerGroup::printAll(llvm::errs());
+
+  if (llvm::timeTraceProfilerEnabled()) {
+    SmallString<128> Path(Clang->getFrontendOpts().OutputFile);
+    llvm::sys::path::replace_extension(Path, "tracing_json");
+    auto profilerOutput =
+        Clang->createOutputFile(Path.str(),
+                                /*Binary=*/false,
+                                /*RemoveFileOnSignal=*/false, "",
+                                /*Extension=*/"tracing_json",
+                                /*useTemporary=*/false);
+
+    llvm::timeTraceProfilerWrite(profilerOutput);
+    llvm::timeTraceProfilerCleanup();
+  }
 
   // Our error handler depends on the Diagnostics object, which we're
   // potentially about to delete. Uninstall the handler now so that any

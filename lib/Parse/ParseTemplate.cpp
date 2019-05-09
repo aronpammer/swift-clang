@@ -19,6 +19,7 @@
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/Scope.h"
+#include "llvm/Support/TimeProfiler.h"
 using namespace clang;
 
 /// \brief Parse a template declaration, explicit instantiation, or
@@ -244,6 +245,12 @@ Parser::ParseSingleDeclarationAfterTemplate(
       ConsumeToken();
     return nullptr;
   }
+
+  llvm::TimeTraceScope TimeScope("ParseTemplate", [&]() {
+    return DeclaratorInfo.getIdentifier() != nullptr
+               ? DeclaratorInfo.getIdentifier()->getName()
+               : "<unknown>";
+  });
 
   LateParsedAttrList LateParsedAttrs(true);
   if (DeclaratorInfo.isFunctionDeclarator())

@@ -56,6 +56,7 @@
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MD5.h"
+#include "llvm/Support/TimeProfiler.h"
 
 using namespace clang;
 using namespace CodeGen;
@@ -2033,11 +2034,14 @@ void CodeGenModule::EmitGlobalDefinition(GlobalDecl GD, llvm::GlobalValue *GV) {
                                  Context.getSourceManager(),
                                  "Generating code for declaration");
 
-  if (isa<FunctionDecl>(D)) {
+  if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
     // At -O0, don't generate IR for functions with available_externally
     // linkage.
     if (!shouldEmitFunction(GD))
       return;
+
+    llvm::TimeTraceScope TimeScope(
+        "CodeGen Function", [&]() { return FD->getQualifiedNameAsString(); });
 
     if (const auto *Method = dyn_cast<CXXMethodDecl>(D)) {
       // Make sure to emit the definition(s) before we emit the thunks.

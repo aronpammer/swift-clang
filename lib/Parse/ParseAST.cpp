@@ -22,6 +22,7 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaConsumer.h"
 #include "llvm/Support/CrashRecoveryContext.h"
+#include "llvm/Support/TimeProfiler.h"
 #include <cstdio>
 #include <memory>
 
@@ -136,6 +137,7 @@ void clang::ParseAST(Sema &S, bool PrintStats, bool SkipFunctionBodies) {
     CleanupParser(ParseOP.get());
 
   S.getPreprocessor().EnterMainSourceFile();
+  llvm::TimeTraceScope TimeScope("Frontend", StringRef(""));
   P.Initialize();
 
   Parser::DeclGroupPtrTy ADecl;
